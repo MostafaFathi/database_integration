@@ -78,7 +78,7 @@ function create_triggers()
     BEFORE UPDATE ON " . $table . "
     FOR EACH ROW 
     BEGIN
-         SET new.SYNC_TIMESTAMP=NOW(),  new.LAST_OPERATION='U';
+    SET new.SYNC_TIMESTAMP=NOW(),  new.LAST_OPERATION='U';
     END";
             $stmt = $DB->prepare($update_trigger);
             $stmt->execute();
@@ -90,9 +90,15 @@ function create_triggers()
     BEFORE UPDATE ON " . $table . "
     FOR EACH ROW 
     BEGIN
-    IF OLD.deleted_at != NOW() AND   new.deleted_at is not null THEN
+    IF  OLD.deleted_at IS NULL  AND NEW.deleted_at IS NOT NULL THEN
          SET new.SYNC_TIMESTAMP=NOW(),  new.LAST_OPERATION='D';
-         END IF;
+       ELSEIF OLD.deleted_at != NEW.deleted_at THEN
+         SET new.SYNC_TIMESTAMP=NOW(),  new.LAST_OPERATION='D';
+       ELSEIF NEW.deleted_at IS NULL AND OLD.deleted_at != NEW.deleted_at THEN
+         SET new.SYNC_TIMESTAMP=NOW(),  new.LAST_OPERATION='U';
+         ELSE
+         SET new.SYNC_TIMESTAMP=NOW(),  new.LAST_OPERATION='U';
+           END IF;
     END";
                 $stmt = $DB->prepare($delete_trigger);
                 $stmt->execute();
